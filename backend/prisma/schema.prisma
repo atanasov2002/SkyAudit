@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                         String   @id @default(uuid())
+  email                      String   @unique
+  password                   String?
+  name                       String
+  isEmailVerified            Boolean  @default(false)
+  isActive                   Boolean  @default(true)
+  failedLoginAttempts        Int      @default(0)
+  accountLockedUntil         DateTime?
+  lastLoginAt                DateTime?
+  lastLoginIp                String?
+  oauthProvider              String?
+  oauthId                    String?
+  profilePicture             String?
+  twoFactorEnabled           Boolean  @default(false)
+  twoFactorSecret            String?
+  twoFactorTempSecret        String?
+  twoFactorBackupCodes       String[]
+  emailVerificationToken     String?
+  emailVerificationTokenExpires DateTime?
+  passwordResetToken         String?
+  passwordResetTokenExpires  DateTime?
+  tempAuthToken              String?
+  tempAuthTokenExpires       DateTime?
+
+  sessions                   UserSession[]
+  refreshTokens              RefreshToken[]
+
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("users")
+  awsAccounts AwsAccount[]
+  costAlerts CostAlert[]
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model UserSession {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  expiresAt        DateTime
+  ip               String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime @updatedAt
+
+  @@map("user_sessions")
+}
+
+model AwsAccount {
+  id                  String          @id @default(uuid())
+  userId              String
+  accountName         String
+  awsAccountId        String          @unique
+  credentialType      AwsCredentialType @default(IAM_ROLE)
+  roleArn             String? 
+  externalId          String?
+  defaultRegion       String          @default("eu-north-1")
+  enabledRegions      String[]
+  status              AwsAccountStatus @default(PENDING)
+  lastHealthCheck     DateTime?
+  lastSyncedAt        DateTime?
+  errorMessage        String?
+  totalServices       Int             @default(0)
+  estimatedMonthlyCost Float          @default(0)
+  metadata            Json?
+  grantedPermissions  String[]
+  autoSync            Boolean         @default(true)
+  syncIntervalHours   Int             @default(24)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  user                User            @relation(fields: [userId], references: [id])
+  services            AwsService[]
+  costAlerts          CostAlert[]
+  awsCostHistories    AwsCostHistory[]
+}
+
+
+enum AwsAccountStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  PENDING
+}
+
+enum AwsCredentialType {
+  IAM_ROLE
+  ASSUMED_ROLE
+}
+
+enum AwsServiceType {
+  EC2
+  RDS
+  S3
+  LAMBDA
+  ECS
+  EKS
+  DYNAMODB
+  CLOUDFRONT
+  ELASTICACHE
+  REDSHIFT
+  ELB
+  VPC
+  CLOUDWATCH
+  IAM
+  ROUTE53
+  SNS
+  SQS
+  KINESIS
+  ATHENA
+  GLUE
+  EMR
+  SAGEMAKER
+  OTHER
+}
+
+enum ServiceStatus {
+  RUNNING
+  STOPPED
+  PENDING
+  TERMINATED
+  ERROR
+  UNKNOWN
+}
+
+model AwsService {
+  id                   String      @id @default(uuid())
+  awsAccountId         String
+  awsAccount           AwsAccount  @relation(fields: [awsAccountId], references: [id])
+  resourceId           String
+  resourceArn          String
+  serviceName          String
+  serviceType          AwsServiceType
+  region               String
+  status               ServiceStatus @default(UNKNOWN)
+  configuration        Json
+  tags                 Json?
+  currentMonthlyCost   Float        @default(0)
+  projectedMonthlyCost Float        @default(0)
+  lastMonthCost        Float        @default(0)
+  metrics              Json?
+  lastMetricsUpdate    DateTime?
+  recommendations      Json?
+  totalRecommendations Int          @default(0)
+  potentialSavings     Float        @default(0)
+  securityFindings     Json?
+  isMonitored          Boolean      @default(true)
+  launchTime           DateTime?
+  lastStateChange      DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  costAlerts CostAlert[]
+
+  awsCostHistories AwsCostHistory[]
+
+  @@unique([awsAccountId, resourceId])
+}
+
+model AwsCostHistory {
+  id           String          @id @default(uuid())
+  awsAccountId String
+  awsServiceId String?          // optional
+  date         DateTime
+  granularity  CostGranularity  @default(DAILY)
+  cost         Float            @default(0)
+  usageQuantity Float           @default(0)
+  usageUnit    String?
+  costBreakdown Json?
+  currency     String?
+  createdAt    DateTime         @default(now())
+
+  awsAccount   AwsAccount       @relation(fields: [awsAccountId], references: [id])
+  awsService   AwsService?      @relation(fields: [awsServiceId], references: [id])
+
+  @@index([awsAccountId, date])
+  @@index([awsServiceId, date])
+}
+
+enum CostGranularity {
+  HOURLY
+  DAILY
+  MONTHLY
+}
+
+model CostAlert {
+  id             String      @id @default(uuid())
+  userId         String
+  awsAccountId   String?
+  awsServiceId   String?
+  alertType      AlertType
+  severity       AlertSeverity @default(MEDIUM)
+  status         AlertStatus   @default(ACTIVE)
+  title          String
+  description    String
+  currentValue   Float?
+  thresholdValue Float?
+  estimatedImpact Float?
+  recommendation String?
+  actionUrl      String?
+  metadata       Json?
+  notificationSent Boolean   @default(false)
+  notificationSentAt DateTime?
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNote  String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  awsAccount   AwsAccount?  @relation(fields: [awsAccountId], references: [id])
+  awsService   AwsService?  @relation(fields: [awsServiceId], references: [id])
+
+  @@index([userId])
+  @@index([awsAccountId])
+  @@index([awsServiceId])
+}
+
+enum AlertType {
+  COST_THRESHOLD
+  COST_SPIKE
+  BUDGET_EXCEEDED
+  UNUSED_RESOURCE
+  SECURITY_FINDING
+  COMPLIANCE_VIOLATION
+  PERFORMANCE_DEGRADATION
+  RESOURCE_QUOTA
+}
+
+enum AlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}

@@ -1,0 +1,240 @@
+-- CreateEnum
+CREATE TYPE "AwsAccountStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'ERROR', 'PENDING');
+
+-- CreateEnum
+CREATE TYPE "AwsCredentialType" AS ENUM ('IAM_ROLE', 'ASSUMED_ROLE');
+
+-- CreateEnum
+CREATE TYPE "AwsServiceType" AS ENUM ('EC2', 'RDS', 'S3', 'LAMBDA', 'ECS', 'EKS', 'DYNAMODB', 'CLOUDFRONT', 'ELASTICACHE', 'REDSHIFT', 'ELB', 'VPC', 'CLOUDWATCH', 'IAM', 'ROUTE53', 'SNS', 'SQS', 'KINESIS', 'ATHENA', 'GLUE', 'EMR', 'SAGEMAKER', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ServiceStatus" AS ENUM ('RUNNING', 'STOPPED', 'PENDING', 'TERMINATED', 'ERROR', 'UNKNOWN');
+
+-- CreateEnum
+CREATE TYPE "CostGranularity" AS ENUM ('HOURLY', 'DAILY', 'MONTHLY');
+
+-- CreateEnum
+CREATE TYPE "AlertType" AS ENUM ('COST_THRESHOLD', 'COST_SPIKE', 'BUDGET_EXCEEDED', 'UNUSED_RESOURCE', 'SECURITY_FINDING', 'COMPLIANCE_VIOLATION', 'PERFORMANCE_DEGRADATION', 'RESOURCE_QUOTA');
+
+-- CreateEnum
+CREATE TYPE "AlertSeverity" AS ENUM ('INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "AlertStatus" AS ENUM ('ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED');
+
+-- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT,
+    "name" TEXT NOT NULL,
+    "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
+    "accountLockedUntil" TIMESTAMP(3),
+    "lastLoginAt" TIMESTAMP(3),
+    "lastLoginIp" TEXT,
+    "oauthProvider" TEXT,
+    "oauthId" TEXT,
+    "profilePicture" TEXT,
+    "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "twoFactorSecret" TEXT,
+    "twoFactorTempSecret" TEXT,
+    "twoFactorBackupCodes" TEXT[],
+    "emailVerificationToken" TEXT,
+    "emailVerificationTokenExpires" TIMESTAMP(3),
+    "passwordResetToken" TEXT,
+    "passwordResetTokenExpires" TIMESTAMP(3),
+    "tempAuthToken" TEXT,
+    "tempAuthTokenExpires" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "refresh_tokens" (
+    "id" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "isRevoked" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_sessions" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "refreshTokenHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "ip" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastUsedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AwsAccount" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "accountName" TEXT NOT NULL,
+    "awsAccountId" TEXT NOT NULL,
+    "credentialType" "AwsCredentialType" NOT NULL DEFAULT 'IAM_ROLE',
+    "roleArn" TEXT,
+    "externalId" TEXT,
+    "defaultRegion" TEXT NOT NULL DEFAULT 'eu-north-1',
+    "enabledRegions" TEXT[],
+    "status" "AwsAccountStatus" NOT NULL DEFAULT 'PENDING',
+    "lastHealthCheck" TIMESTAMP(3),
+    "lastSyncedAt" TIMESTAMP(3),
+    "errorMessage" TEXT,
+    "totalServices" INTEGER NOT NULL DEFAULT 0,
+    "estimatedMonthlyCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "metadata" JSONB,
+    "grantedPermissions" TEXT[],
+    "autoSync" BOOLEAN NOT NULL DEFAULT true,
+    "syncIntervalHours" INTEGER NOT NULL DEFAULT 24,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AwsAccount_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AwsService" (
+    "id" TEXT NOT NULL,
+    "awsAccountId" TEXT NOT NULL,
+    "resourceId" TEXT NOT NULL,
+    "resourceArn" TEXT NOT NULL,
+    "serviceName" TEXT NOT NULL,
+    "serviceType" "AwsServiceType" NOT NULL,
+    "region" TEXT NOT NULL,
+    "status" "ServiceStatus" NOT NULL DEFAULT 'UNKNOWN',
+    "configuration" JSONB NOT NULL,
+    "tags" JSONB,
+    "currentMonthlyCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "projectedMonthlyCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lastMonthCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "metrics" JSONB,
+    "lastMetricsUpdate" TIMESTAMP(3),
+    "recommendations" JSONB,
+    "totalRecommendations" INTEGER NOT NULL DEFAULT 0,
+    "potentialSavings" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "securityFindings" JSONB,
+    "isMonitored" BOOLEAN NOT NULL DEFAULT true,
+    "launchTime" TIMESTAMP(3),
+    "lastStateChange" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AwsService_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AwsCostHistory" (
+    "id" TEXT NOT NULL,
+    "awsAccountId" TEXT NOT NULL,
+    "awsServiceId" TEXT,
+    "date" TIMESTAMP(3) NOT NULL,
+    "granularity" "CostGranularity" NOT NULL DEFAULT 'DAILY',
+    "cost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "usageQuantity" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "usageUnit" TEXT,
+    "costBreakdown" JSONB,
+    "currency" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AwsCostHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CostAlert" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "awsAccountId" TEXT,
+    "awsServiceId" TEXT,
+    "alertType" "AlertType" NOT NULL,
+    "severity" "AlertSeverity" NOT NULL DEFAULT 'MEDIUM',
+    "status" "AlertStatus" NOT NULL DEFAULT 'ACTIVE',
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "currentValue" DOUBLE PRECISION,
+    "thresholdValue" DOUBLE PRECISION,
+    "estimatedImpact" DOUBLE PRECISION,
+    "recommendation" TEXT,
+    "actionUrl" TEXT,
+    "metadata" JSONB,
+    "notificationSent" BOOLEAN NOT NULL DEFAULT false,
+    "notificationSentAt" TIMESTAMP(3),
+    "acknowledgedAt" TIMESTAMP(3),
+    "acknowledgedBy" TEXT,
+    "resolvedAt" TIMESTAMP(3),
+    "resolvedBy" TEXT,
+    "resolutionNote" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CostAlert_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "refresh_tokens_token_key" ON "refresh_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AwsAccount_awsAccountId_key" ON "AwsAccount"("awsAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AwsService_awsAccountId_resourceId_key" ON "AwsService"("awsAccountId", "resourceId");
+
+-- CreateIndex
+CREATE INDEX "AwsCostHistory_awsAccountId_date_idx" ON "AwsCostHistory"("awsAccountId", "date");
+
+-- CreateIndex
+CREATE INDEX "AwsCostHistory_awsServiceId_date_idx" ON "AwsCostHistory"("awsServiceId", "date");
+
+-- CreateIndex
+CREATE INDEX "CostAlert_userId_idx" ON "CostAlert"("userId");
+
+-- CreateIndex
+CREATE INDEX "CostAlert_awsAccountId_idx" ON "CostAlert"("awsAccountId");
+
+-- CreateIndex
+CREATE INDEX "CostAlert_awsServiceId_idx" ON "CostAlert"("awsServiceId");
+
+-- AddForeignKey
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AwsAccount" ADD CONSTRAINT "AwsAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AwsService" ADD CONSTRAINT "AwsService_awsAccountId_fkey" FOREIGN KEY ("awsAccountId") REFERENCES "AwsAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AwsCostHistory" ADD CONSTRAINT "AwsCostHistory_awsAccountId_fkey" FOREIGN KEY ("awsAccountId") REFERENCES "AwsAccount"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AwsCostHistory" ADD CONSTRAINT "AwsCostHistory_awsServiceId_fkey" FOREIGN KEY ("awsServiceId") REFERENCES "AwsService"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CostAlert" ADD CONSTRAINT "CostAlert_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CostAlert" ADD CONSTRAINT "CostAlert_awsAccountId_fkey" FOREIGN KEY ("awsAccountId") REFERENCES "AwsAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CostAlert" ADD CONSTRAINT "CostAlert_awsServiceId_fkey" FOREIGN KEY ("awsServiceId") REFERENCES "AwsService"("id") ON DELETE SET NULL ON UPDATE CASCADE;

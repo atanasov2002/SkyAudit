@@ -3,9 +3,10 @@ import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { reactRouterDevTools } from "react-router-devtools";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  plugins: [tailwindcss(), reactRouterDevTools(), reactRouter(), tsconfigPaths(), ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -20,4 +21,7 @@ export default defineConfig({
   ssr: {
     noExternal: ["styled-components"],
   },
+  build: {
+    outDir: 'dist'
+  }
 });

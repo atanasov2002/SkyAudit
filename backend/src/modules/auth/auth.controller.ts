@@ -301,58 +301,58 @@ export class AuthController {
     };
   }
 
-  // OAuth Routes
-  @Get('google')
-  @UseGuards(GoogleAuthGuard)
-  async googleAuth() {
-    // Guard redirects to Google
-  }
+  // // OAuth Routes
+  // @Get('google')
+  // @UseGuards(GoogleAuthGuard)
+  // async googleAuth() {
+  //   // Guard redirects to Google
+  // }
 
-  @Get('google/callback')
-  @UseGuards(GoogleAuthGuard)
-  async googleAuthCallback(@Req() req: RequestWithUser) {
-    const tokens = await this.authService.handleOAuthLogin(req.user, 'google');
-    // Redirect to frontend with tokens
-    return {
-      message: 'Google authentication successful',
-      ...tokens,
-    };
-  }
+  // @Get('google/callback')
+  // @UseGuards(GoogleAuthGuard)
+  // async googleAuthCallback(@Req() req: RequestWithUser) {
+  //   const tokens = await this.authService.handleOAuthLogin(req.user, 'google');
+  //   // Redirect to frontend with tokens
+  //   return {
+  //     message: 'Google authentication successful',
+  //     ...tokens,
+  //   };
+  // }
 
-  @Get('github')
-  @UseGuards(GithubAuthGuard)
-  async githubAuth() {
-    // Guard redirects to GitHub
-  }
+  // @Get('github')
+  // @UseGuards(GithubAuthGuard)
+  // async githubAuth() {
+  //   // Guard redirects to GitHub
+  // }
 
-  @Get('github/callback')
-  @UseGuards(GithubAuthGuard)
-  async githubAuthCallback(@Req() req: RequestWithUser) {
-    const tokens = await this.authService.handleOAuthLogin(req.user, 'github');
-    return {
-      message: 'GitHub authentication successful',
-      ...tokens,
-    };
-  }
+  // @Get('github/callback')
+  // @UseGuards(GithubAuthGuard)
+  // async githubAuthCallback(@Req() req: RequestWithUser) {
+  //   const tokens = await this.authService.handleOAuthLogin(req.user, 'github');
+  //   return {
+  //     message: 'GitHub authentication successful',
+  //     ...tokens,
+  //   };
+  // }
 
-  @Get('microsoft')
-  @UseGuards(MicrosoftAuthGuard)
-  async microsoftAuth() {
-    // Guard redirects to Microsoft
-  }
+  // @Get('microsoft')
+  // @UseGuards(MicrosoftAuthGuard)
+  // async microsoftAuth() {
+  //   // Guard redirects to Microsoft
+  // }
 
-  @Get('microsoft/callback')
-  @UseGuards(MicrosoftAuthGuard)
-  async microsoftAuthCallback(@Req() req: RequestWithUser) {
-    const tokens = await this.authService.handleOAuthLogin(
-      req.user,
-      'microsoft',
-    );
-    return {
-      message: 'Microsoft authentication successful',
-      ...tokens,
-    };
-  }
+  // @Get('microsoft/callback')
+  // @UseGuards(MicrosoftAuthGuard)
+  // async microsoftAuthCallback(@Req() req: RequestWithUser) {
+  //   const tokens = await this.authService.handleOAuthLogin(
+  //     req.user,
+  //     'microsoft',
+  //   );
+  //   return {
+  //     message: 'Microsoft authentication successful',
+  //     ...tokens,
+  //   };
+  // }
 
   @Get('validate')
   @UseGuards(JwtAuthGuard)

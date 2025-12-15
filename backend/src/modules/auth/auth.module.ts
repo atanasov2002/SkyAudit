@@ -17,6 +17,7 @@ import { OAuthService } from './services/oauth.service';
 import { UsersModule } from 'src/modules/users/users.module';
 import { UserSessionRepository } from './repositories/user-session.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { UserRepository } from '../users/user.repository';
 
 @Module({
   imports: [
@@ -45,15 +46,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
     AuthService,
     EmailService,
     TwoFactorService,
-    OAuthService,
+    //OAuthService,
     UserSessionRepository,
     JwtStrategy,
     RefreshTokenStrategy,
     LocalStrategy,
-    GoogleStrategy,
-    GithubStrategy,
-    MicrosoftStrategy,
+    // GoogleStrategy,
+    // GithubStrategy,
+    // MicrosoftStrategy,
   ],
-  exports: [AuthService],
+  exports: [AuthService, JwtStrategy],
 })
 export class AuthModule {}

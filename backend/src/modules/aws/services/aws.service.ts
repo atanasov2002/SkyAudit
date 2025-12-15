@@ -22,7 +22,9 @@ import { AwsAccountRepository } from '../repositories/aws-account.repository';
 import { AwsServiceRepository } from '../repositories/aws-service.repository';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { Prisma } from 'src/generated/prisma/client';
+import { SupportClient, DescribeTrustedAdvisorChecksCommand, DescribeTrustedAdvisorCheckResultCommand } from '@aws-sdk/client-support';
+import { ComputeOptimizerClient, GetEC2InstanceRecommendationsCommand } from '@aws-sdk/client-compute-optimizer';
+
 
 @Injectable()
 export class AwsService {
@@ -480,4 +482,67 @@ export class AwsService {
     };
     return statusMap[status || ''] || 'unknown';
   }
+
+  /**
+ * Get Trusted Advisor cost optimization recommendations
+ */
+async getTrustedAdvisorRecommendations(account: any): Promise<any[]> {
+  const credentials = await this.getCredentials(account);
+
+  const supportClient = new SupportClient({
+    region: 'us-east-1', // Trusted Advisor only in us-east-1
+    credentials,
+  });
+
+  const checksResp = await supportClient.send(
+    new DescribeTrustedAdvisorChecksCommand({ language: 'en' })
+  );
+
+  const costChecks = (checksResp.checks || []).filter(c => c.category === 'cost_optimization');
+
+  const recommendations: any[] = [];
+
+  for (const check of costChecks) {
+    const result = await supportClient.send(
+      new DescribeTrustedAdvisorCheckResultCommand({ checkId: check.id! })
+    );
+
+    for (const resource of result.result?.flaggedResources || []) {
+      recommendations.push({
+        serviceName: resource.metadata?.[0] || 'Unknown',
+        resourceId: resource.resourceId,
+        recommendation: resource.metadata?.[2] || '',
+        severity: 'high', // you can map based on resource.status
+        potentialSavings: Number(resource.metadata?.[1] || 0),
+        source: 'TrustedAdvisor',
+      });
+    }
+  }
+
+  return recommendations;
+}
+
+/**
+ * Get Compute Optimizer recommendations for EC2
+ */
+async getComputeOptimizerRecommendations(account: any): Promise<any[]> {
+  const credentials = await this.getCredentials(account);
+
+  const optimizerClient = new ComputeOptimizerClient({
+    region: 'us-east-1',
+    credentials,
+  });
+
+  const recsResp = await optimizerClient.send(new GetEC2InstanceRecommendationsCommand({}));
+
+  return (recsResp.instanceRecommendations || []).map(r => ({
+    serviceName: r.instanceName,
+    resourceId: r.instanceArn,
+    recommendation: r.recommendationOptions?.[0]?.performanceRisk,
+    severity: 'medium',
+    potentialSavings: r.findingReasonCodes?.length || 0,
+    source: 'ComputeOptimizer',
+  }));
+}
+
 }

@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "node dist/src/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -28,12 +28,14 @@
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.940.0",
+    "@aws-sdk/client-compute-optimizer": "^3.948.0",
     "@aws-sdk/client-cost-explorer": "^3.940.0",
     "@aws-sdk/client-ec2": "^3.940.0",
     "@aws-sdk/client-lambda": "^3.940.0",
     "@aws-sdk/client-rds": "^3.940.0",
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/client-sts": "^3.940.0",
+    "@aws-sdk/client-support": "^3.948.0",
     "@aws-sdk/types": "^3.936.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

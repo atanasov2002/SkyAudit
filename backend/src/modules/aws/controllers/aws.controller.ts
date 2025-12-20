@@ -23,26 +23,6 @@ import { GetServicesDto } from '../dto/get-services.dto';
 import { ResolveAlertDto } from '../dto/alert-action.dto';
 import { ServiceStatus } from 'src/generated/prisma/client';
 import { JwtCookieAuthGuard } from 'src/modules/auth/guards/jwt-cookie-auth.guard';
-import { log } from 'node:console';
-
-interface RequestWithUser extends Request {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    isActive: boolean;
-    failedLoginAttempts: number;
-    accountLockedUntil: Date | null;
-    lastLoginAt: Date | null;
-    lastLoginIp: string | null;
-    oauthProvider: string | null;
-    oauthId: string | null;
-    profilePictureUrl: string | null;
-    twoFactorEnabled: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-}
 
 @Controller('api/aws')
 @UseGuards(JwtCookieAuthGuard)
@@ -282,29 +262,35 @@ export class AwsController {
     @Param('accountId') accountId: string,
     @Param('serviceId') serviceId: string,
   ) {
-    const account =
-      await this.awsAccountRepository.findByAwsAccountId(accountId);
+    const service = await this.awsService.getServiceWithMetrics(
+      req,
+      accountId,
+      serviceId,
+    );
+    return { message: 'Service retrieved', service };
+    // const account =
+    //   await this.awsAccountRepository.findByAwsAccountId(accountId);
 
-    if (!account || account.userId !== req.user.id) {
-      return {
-        statusCode: 404,
-        message: 'AWS account not found',
-      };
-    }
+    // if (!account || account.userId !== req.user.id) {
+    //   return {
+    //     statusCode: 404,
+    //     message: 'AWS account not found',
+    //   };
+    // }
 
-    const service = await this.awsServiceRepository.findById(serviceId);
+    // const service = await this.awsServiceRepository.findById(serviceId);
 
-    if (!service || service.awsAccountId !== account.id) {
-      return {
-        statusCode: 404,
-        message: 'Service not found',
-      };
-    }
+    // if (!service || service.awsAccountId !== account.id) {
+    //   return {
+    //     statusCode: 404,
+    //     message: 'Service not found',
+    //   };
+    // }
 
-    return {
-      message: 'Service retrieved successfully',
-      service,
-    };
+    // return {
+    //   message: 'Service retrieved successfully',
+    //   service,
+    // };
   }
 
   // ==================== Cost & Analytics ====================

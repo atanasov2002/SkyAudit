@@ -1,4 +1,5 @@
 import { jwtDecode } from "jwt-decode";
+import { useEffect } from "react";
 
 export interface TokenPayload {
   sub: string;
@@ -160,3 +161,18 @@ export const clearAuthState = () => {
 //     return null;
 //   }
 // };
+
+export function ThemeInitializer() {
+  useEffect(() => {
+    try {
+      const storedTheme = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      const theme = storedTheme || (prefersDark ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+    } catch (e) {}
+  }, []);
+
+  return null;
+}

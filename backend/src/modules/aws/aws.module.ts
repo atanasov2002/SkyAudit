@@ -6,11 +6,14 @@ import { AwsServiceRepository } from './repositories/aws-service.repository';
 import { CostAlertRepository } from './repositories/cost-alert.repository';
 import { AwsCostHistoryRepository } from './repositories/aws-cost-history.repository';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CloudWatchModule } from '../cloudwatch/cloudwatch.module';
 
 @Module({
+  imports: [CloudWatchModule],
   controllers: [AwsController],
   providers: [
     PrismaService,
+    CloudWatchModule,
     AwsService,
     AwsAccountRepository,
     AwsServiceRepository,

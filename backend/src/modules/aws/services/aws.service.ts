@@ -22,7 +22,12 @@ import { AwsAccountRepository } from '../repositories/aws-account.repository';
 import { AwsServiceRepository } from '../repositories/aws-service.repository';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { Prisma } from 'src/generated/prisma/client';
+import { CloudWatchService } from 'src/modules/cloudwatch/cloudwatch.service';
+import { AwsAccount } from 'src/generated/prisma/client';
+import {
+  AwsServiceModel,
+  AwsServiceWhereInput,
+} from 'src/generated/prisma/models';
 
 @Injectable()
 export class AwsService {
@@ -33,8 +38,51 @@ export class AwsService {
     private awsAccountRepository: AwsAccountRepository,
     private awsServiceRepository: AwsServiceRepository,
     private configService: ConfigService,
+    private readonly cloudWatchService: CloudWatchService,
   ) {
     this.encryptionKey = this.configService.get('ENCRYPTION_KEY')!;
+  }
+
+  async getServiceWithMetrics(
+    req: RequestWithUser,
+    accountId: string,
+    serviceId: string,
+  ) {
+    const account =
+      await this.awsAccountRepository.findByAwsAccountId(accountId);
+
+    if (!account || account.userId !== req.user.id) {
+      return {
+        statusCode: 404,
+        message: 'AWS account not found',
+      };
+    }
+    const service = await this.awsServiceRepository.findById(serviceId);
+
+    if (!service || service.awsAccountId !== account.id)
+      throw new NotFoundException('Service not found');
+
+    if (service.isMonitored && service.serviceType === 'EC2') {
+      const account = await this.awsAccountRepository.findById(
+        service.awsAccountId,
+      );
+      const credentials = await this.getCredentials(account!);
+
+      const metrics = await this.cloudWatchService.getEc2Metrics(
+        service.resourceId,
+        service.region,
+        credentials,
+      );
+
+      await this.awsServiceRepository.updateMetrics(service.id, metrics);
+
+      return {
+        ...service,
+        metrics,
+      };
+    }
+
+    return service;
   }
 
   /**
@@ -222,14 +270,13 @@ export class AwsService {
   /**
    * Get AWS credentials for an account
    */
-  private async getCredentials(account: any): Promise<any> {
+  private async getCredentials(account: AwsAccount): Promise<any> {
     if (account.roleArn) {
-      // Assume role
       const stsClient = new STSClient({ region: account.defaultRegion });
       const command = new AssumeRoleCommand({
         RoleArn: account.roleArn,
         RoleSessionName: 'SkyAuditSession',
-        ExternalId: account.externalId,
+        ExternalId: account.externalId!,
         DurationSeconds: 3600,
       });
       const response = await stsClient.send(command);

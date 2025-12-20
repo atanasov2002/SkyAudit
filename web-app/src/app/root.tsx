@@ -12,6 +12,7 @@ import "./app.css";
 import { AppProviders } from "../providers/AppProviders";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { theme } from "@/styles/theme";
+import { ThemeInitializer } from "@/lib/util";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -40,22 +41,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta httpEquiv="Expires" content="0" />
         <Meta />
         <Links />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-      (function() {
-        try {
-          const storedTheme = localStorage.getItem('theme');
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const theme = storedTheme || (prefersDark ? 'dark' : 'light');
-          document.documentElement.dataset.theme = theme;
-        } catch(e) {}
-      })();
-    `,
-          }}
-        />
       </head>
       <body>
+        <ThemeInitializer />
         <AppProviders>{children}</AppProviders>
         <ScrollRestoration />
         <Scripts />

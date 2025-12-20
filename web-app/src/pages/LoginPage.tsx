@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Cloud, Mail, Key, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";

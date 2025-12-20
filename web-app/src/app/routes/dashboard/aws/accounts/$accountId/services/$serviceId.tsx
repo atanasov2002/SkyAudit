@@ -1,6 +1,6 @@
-import ServiceDetailsPage from "@/pages/ServiceDetailsPage";
 import type { Route } from "./+types/$serviceId";
 import { requireAuth } from "@/features/auth/routeProtection";
+import ServiceDetailsPageWrapper from "@/components/ServiceDetailsPageWrapper";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   await requireAuth(request);
@@ -8,5 +8,5 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 export default function ServiceDetails() {
-  return <ServiceDetailsPage />;
+  return <ServiceDetailsPageWrapper />;
 }

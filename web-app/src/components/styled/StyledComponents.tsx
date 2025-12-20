@@ -1,4 +1,4 @@
-import React, { CSSProperties, useEffect, useRef } from "react";
+import React, { CSSProperties, useEffect, useRef, useState } from "react";
 import { components, theme } from "@/styles/theme";
 import styledImport from "styled-components";
 const styled = (styledImport as any).default || styledImport;
@@ -313,6 +313,12 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true); // Mark as client-mounted
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       // Give React time to render the DOM
@@ -322,7 +328,7 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isMounted || !isOpen) return null;
 
   return (
     <div style={components.modal.overlay} onClick={onClose}>

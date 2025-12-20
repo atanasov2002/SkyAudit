@@ -73,7 +73,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly twoFactorService: TwoFactorService,
     private readonly emailService: EmailService,
-    private readonly oauthService: OAuthService,
+    //private readonly oauthService: OAuthService,
   ) {}
 
   // ========================
@@ -346,23 +346,23 @@ export class AuthService {
   // ========================
   // OAuth
   // ========================
-  async handleOAuthLogin(oauthUser: any, provider: string) {
-    let result;
-    switch (provider) {
-      case 'google':
-        result = await this.oauthService.googleLogin(oauthUser);
-        break;
-      case 'github':
-        result = await this.oauthService.githubLogin(oauthUser);
-        break;
-      case 'microsoft':
-        result = await this.oauthService.microsoftLogin(oauthUser);
-        break;
-      default:
-        throw new BadRequestException('Unsupported OAuth provider');
-    }
-    return this.oauthService.generateOAuthTokens(result.userId, result.email);
-  }
+  // async handleOAuthLogin(oauthUser: any, provider: string) {
+  //   let result;
+  //   switch (provider) {
+  //     case 'google':
+  //       result = await this.oauthService.googleLogin(oauthUser);
+  //       break;
+  //     case 'github':
+  //       result = await this.oauthService.githubLogin(oauthUser);
+  //       break;
+  //     case 'microsoft':
+  //       result = await this.oauthService.microsoftLogin(oauthUser);
+  //       break;
+  //     default:
+  //       throw new BadRequestException('Unsupported OAuth provider');
+  //   }
+  //   return this.oauthService.generateOAuthTokens(result.userId, result.email);
+  // }
 
   // ========================
   // Token Management

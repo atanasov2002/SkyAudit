@@ -20,4 +20,8 @@ export default defineConfig({
   ssr: {
     noExternal: ["styled-components"],
   },
+  build: {
+    outDir: 'dist'
+  },
+  base: "/",
 });

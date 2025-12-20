@@ -375,17 +375,18 @@ export class AwsController {
       };
     }
 
-    const servicesWithRecs =
+    const dbRecs =
       await this.awsServiceRepository.getServicesWithRecommendations(accountId);
+    const taRecs =
+      await this.awsService.getTrustedAdvisorRecommendations(account);
+    const optimizerRecs =
+      await this.awsService.getComputeOptimizerRecommendations(account);
 
-    const allRecommendations = servicesWithRecs.flatMap((service) =>
-      ((service.recommendations as any[]) || []).map((rec) => ({
-        ...rec,
-        serviceName: service.serviceName,
-        serviceType: service.serviceType,
-        serviceId: service.id,
-      })),
-    );
+    const allRecommendations = [
+      ...dbRecs.flatMap((s) => s.recommendations || []),
+      ...taRecs,
+      ...optimizerRecs,
+    ];
 
     // Sort by severity and potential savings
     allRecommendations.sort((a, b) => {
